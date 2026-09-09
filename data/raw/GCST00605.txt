@@ -1,0 +1,15 @@
+library(here)
+library(readr)
+library(dplyr)
+
+data_dir <- here("data", "raw")
+
+prostate <- read_tsv(
+  file.path(data_dir, "GCST006085.txt"),
+  col_select = c(
+    Chr, position, Pvalue, rs_id,
+    SNP, Allele2, Allele1,
+    Effect, StdErr
+  ),
+  progress = FALSE
+)
