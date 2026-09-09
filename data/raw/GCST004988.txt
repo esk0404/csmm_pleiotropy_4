@@ -1,0 +1,13 @@
+library(readr)
+library(dplyr)
+library(here)
+
+data_dir <- here("data", "raw")
+
+breast <- read_tsv("GCST004988.txt",
+                   col_select = c(chr, var_name, phase3_1kg_id,
+                                  position_b37, bcac_gwas_all_beta, 
+                                  bcac_gwas_all_se,
+                                  bcac_gwas_all_P1df,
+                                  a0, a1),
+                   progress = FALSE)
