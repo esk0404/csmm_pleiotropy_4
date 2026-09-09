@@ -1,4 +1,4 @@
-#' find_max_means.R
+#' find_max_means_R1.R
 #'
 #' Find maximum means for each dimension in null settings.
 
