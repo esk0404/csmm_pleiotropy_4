@@ -1,0 +1,12 @@
+library(here)
+library(readr)
+library(dplyr)
+
+data_dir <- here("data", "raw")
+
+ovarian <- read_tsv("GCST90455658.tsv.gz",
+                    col_select = c(variant_id, chromosome, base_pair_location, 
+                                   other_allele, effect_allele,
+                                   beta, standard_error,
+                                   p_value),
+                    progress = FALSE)
