@@ -11,21 +11,25 @@
 #' initMuList <- list(matrix(data=0, nrow=2, ncol=1), matrix(data=c(0, 3, 0, 6), nrow=2),
 #' matrix(data=c(3, 0, 6, 0), nrow=2), matrix(data=c(8, 8), nrow=2))
 #' find_max_means(initMuList)
-find_max_means <- function(muInfo) {
 
+find_max_means_R1 <- function(muInfo) {
+  
   # iterate, skip the first (0) and last (alternative)
   listLength <- length(muInfo)
   K <- nrow(muInfo[[1]])
+  #S1 <- c(1,2,4,8)+1  # t=1
+  S1 <- c(1:6,8:10,12)+1   # t=2
+  # Com_Set <- compute_sets(K,t)
+  # S1 <- Com_Set[1]
   # just keep finding the max
   maxMeans <- rep(0, K) 
-  for (element_it in 2:(listLength - 1)) {
+  for (element_it in S1) {
     tempMat <- cbind(muInfo[[element_it]], maxMeans)
     maxMeans <- apply(tempMat, 1, max)
   }
   # return K*1 vector
   return(maxMeans)
 }
-
 
 
 
