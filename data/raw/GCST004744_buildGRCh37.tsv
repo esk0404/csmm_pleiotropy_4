@@ -1,0 +1,15 @@
+library(readr)
+library(dplyr)
+library(here)
+
+data_dir <- here("data", "raw")
+
+lung <- read_tsv("GCST004744_buildGRCh37.tsv",
+                 col_select = c(variant_id, chromosome,
+                                base_pair_location,
+                                beta,
+                                standard_error,
+                                effect_allele,
+                                other_allele,
+                                p_value),
+                 progress = FALSE)
