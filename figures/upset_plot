@@ -1,0 +1,34 @@
+library(data.table)
+library(here)
+
+data_dir <- here("results")
+output_dir <- here("figures")
+
+fe_meta <- fread(file.path(data_dir, "fe_meta_sig.csv"))
+re_meta <- fread(file.path(data_dir, "re_meta_sig.csv"))
+asset1 <- fread(file.path(data_dir, "asset1_sig.csv"))
+asset2 <- fread(file.path(data_dir, "asset2_sig.csv"))
+csmgmm_t2 <- fread(file.path(data_dir, "csmgmm_sig.csv"))
+
+
+#install.packages("UpSetR")
+library(UpSetR)
+
+snp_sets <- list(
+  CSMGMM = unique(csmgmm_t2$rsid),
+  FE     = unique(fe_meta$rsid),
+  RE     = unique(re_meta$rsid),
+  ASSET1 = unique(asset1$rsid),
+  ASSET2 = unique(asset2$rsid)
+)
+
+upset_data <- fromList(snp_sets)
+
+upset(
+  upset_data,
+  sets = names(snp_sets),
+  order.by = "freq",
+  nsets = 5,
+  nintersects = 30,
+  keep.order = TRUE
+)
