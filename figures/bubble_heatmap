@@ -1,0 +1,118 @@
+
+library(tidyr)
+library(dplyr)
+library(data.table)
+library(ggplot2)
+library(here)
+
+# ------------------------------------------------------------------
+# Paths
+# ------------------------------------------------------------------
+
+data_dir <- here("results")
+output_dir <- here("figures")
+
+# ------------------------------------------------------------------
+# Read data
+# ------------------------------------------------------------------
+
+data <- fread(
+  file.path(data_dir, "Bubble_Heatmap_Data.csv")
+)
+
+# ------------------------------------------------------------------
+# Prepare plotting data
+# ------------------------------------------------------------------
+
+plotData <- data %>%
+  pivot_longer(
+    cols = -rsid,
+    names_to = c(".value", "Cancer"),
+    names_sep = "_"
+  ) %>%
+  mutate(
+    stars = case_when(
+      P < 0.001 ~ "**",
+      P < 0.05  ~ "*",
+      TRUE      ~ ""
+    )
+  ) %>%
+  filter(
+    !is.na(rsid),
+    trimws(as.character(rsid)) != ""
+  ) %>%
+  mutate(
+    rsid = droplevels(rsid)
+  )
+
+# ------------------------------------------------------------------
+# Create bubble heatmap
+# ------------------------------------------------------------------
+
+p <- ggplot(plotData, aes(x = Cancer, y = rsid)) +
+
+  geom_tile(
+    fill = "white",
+    color = "grey60",
+    linewidth = 0.4
+  ) +
+
+  geom_point(
+    aes(
+      size = abs(Z),
+      fill = Z
+    ),
+    shape = 21,
+    color = "black"
+  ) +
+
+  geom_text(
+    aes(label = stars),
+    fontface = "bold",
+    size = 3
+  ) +
+
+  scale_fill_gradient2(
+    low = "red",
+    mid = "white",
+    high = "blue",
+    midpoint = 0,
+    name = NULL
+  ) +
+
+  scale_size(
+    range = c(2, 16),
+    name = NULL
+  ) +
+
+  scale_y_discrete(
+    expand = c(0, 0)
+  ) +
+
+  guides(
+    size = "none"
+  ) +
+
+  theme_bw() +
+
+  theme(
+    axis.title = element_blank(),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    ),
+    panel.grid = element_blank(),
+    legend.title = element_blank()
+  )
+
+# ------------------------------------------------------------------
+# Save figure
+# ------------------------------------------------------------------
+
+ggsave(
+  filename = file.path(output_dir, "Bubble_Heatmap_t2.png"),
+  width = 12,
+  height = 7,
+  units = "in",
+  dpi = 300
+)
