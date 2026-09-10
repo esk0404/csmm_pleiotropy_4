@@ -1,0 +1,31 @@
+library(data.table)
+library(here)
+
+data_dir <- here("results", "meta_analysis")
+output_dir <- here("results", "tables")
+
+fe_meta <- fread(file.path(data_dir, "fe_meta_results.csv"))
+re_meta <- fread(file.path(data_dir, "re_meta_results.csv"))
+asset1 <- fread(file.path(data_dir, "asset1_sided_sig.csv"))
+asset2 <- fread(file.path(data_dir, "asset2_sided_sig.csv"))
+csmgmm_t2 <- fread(file.path(here("results", "csmGmm"), "Pleiotropy_K4_t2.csv"))
+
+overlap_table <- data.table(
+  Comparison = c(
+    "csmGmm vs Fixed Effects",
+    "csmGmm vs Random Effects",
+    "csmGmm vs ASSET (1-sided)",
+    "csmGmm vs ASSET (2-sided)"
+  ),
+  Overlap_SNPs = c(
+    length(intersect(csmgmm_t2$rsid, fe_meta$rsid)),
+    length(intersect(csmgmm_t2$rsid, re_meta$rsid)),
+    length(intersect(csmgmm_t2$rsid, asset1$rsid)),
+    length(intersect(csmgmm_t2$rsid, asset2$rsid))
+  )
+)
+
+fwrite(
+  overlap_table,
+  file.path(output_dir, "method_overlap.csv")
+)
