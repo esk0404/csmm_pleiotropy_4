@@ -1,0 +1,126 @@
+
+library(dplyr)
+library(data.table)
+library(tidyr)
+library(here)
+
+# ------------------------------------------------------------------
+# Paths
+# ------------------------------------------------------------------
+
+data_dir <- here("results")
+output_dir <- here("tables")
+
+# ------------------------------------------------------------------
+# Read results
+# ------------------------------------------------------------------
+
+fe_meta <- fread(
+  file.path(data_dir, "Pleiotropy_K4_fe_all_zp.csv")
+)
+
+re_meta <- fread(
+  file.path(data_dir, "Pleiotropy_K4_re_all_zp.csv")
+)
+
+asset1 <- fread(
+  file.path(data_dir, "asset1_sig_zp.csv")
+)
+
+asset2 <- fread(
+  file.path(data_dir, "asset2_sig_zp.csv")
+)
+
+csmgmm_t2 <- fread(
+  file.path(data_dir, "csmgmm_sig.csv")
+)
+
+# ------------------------------------------------------------------
+# Function to summarize effect directions
+# ------------------------------------------------------------------
+
+summarize_direction <- function(dat) {
+
+  dat %>%
+    mutate(
+      n_positive = rowSums(
+        across(
+          c(Z_Breast, Z_Lung, Z_Ovarian, Z_Prostate),
+          ~ .x > 0
+        )
+      ),
+      direction = case_when(
+        n_positive == 4 ~ "++++",
+        n_positive == 3 ~ "+++-",
+        n_positive == 2 ~ "++--",
+        n_positive == 1 ~ "---+",
+        n_positive == 0 ~ "----"
+      )
+    ) %>%
+    count(direction) %>%
+    mutate(
+      percentage = 100 * n / sum(n)
+    )
+}
+
+# ------------------------------------------------------------------
+# Summarize effect directions for each method
+# ------------------------------------------------------------------
+
+direction_summary_csmgmm <- summarize_direction(csmgmm_t2)
+direction_summary_fe <- summarize_direction(fe_meta)
+direction_summary_re <- summarize_direction(re_meta)
+direction_summary_asset1 <- summarize_direction(asset1)
+direction_summary_asset2 <- summarize_direction(asset2)
+
+# ------------------------------------------------------------------
+# Combine percentage summaries
+# ------------------------------------------------------------------
+
+direction_table <- bind_rows(
+  CSMGMM = direction_summary_csmgmm,
+  FE     = direction_summary_fe,
+  RE     = direction_summary_re,
+  ASSET1 = direction_summary_asset1,
+  ASSET2 = direction_summary_asset2,
+  .id = "Method"
+) %>%
+  select(
+    Method,
+    direction,
+    percentage
+  ) %>%
+  pivot_wider(
+    names_from = direction,
+    values_from = percentage,
+    values_fill = 0
+  ) %>%
+  select(
+    Method,
+    `++++`,
+    `+++-`,
+    `++--`,
+    `---+`,
+    `----`
+  ) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      ~ round(.x, 2)
+    )
+  )
+
+# ------------------------------------------------------------------
+# Display table
+# ------------------------------------------------------------------
+
+direction_table
+
+# ------------------------------------------------------------------
+# Save table
+# ------------------------------------------------------------------
+
+fwrite(
+  direction_table,
+  file.path(output_dir, "direction_configuration_percentages.csv")
+)
