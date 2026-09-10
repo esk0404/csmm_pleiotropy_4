@@ -1,0 +1,49 @@
+library(data.table)
+library(here)
+library(dplyr)
+
+data_dir <- here("results")
+output_dir <- here("tables")
+
+fe_meta <- fread(file.path(data_dir, "fe_meta_sig.csv"))
+re_meta <- fread(file.path(data_dir, "re_meta_sig.csv"))
+asset1 <- fread(file.path(data_dir, "asset1_sig.csv"))
+asset2 <- fread(file.path(data_dir, "asset2_sig.csv"))
+csmgmm_t2 <- fread(file.path(data_dir, "csmgmm_sig.csv"))
+
+
+snp_sets <- list(
+  CSMGMM = unique(csmgmm_t2$rsid),
+  FE     = unique(fe_meta$rsid),
+  RE     = unique(re_meta$rsid),
+  ASSET1 = unique(asset1$rsid),
+  ASSET2 = unique(asset2$rsid)
+)
+
+group <- intersect(
+  intersect(snp_sets$CSMGMM, snp_sets$RE),
+  snp_sets$ASSET2
+)
+
+group <- setdiff(
+  group,
+  union(snp_sets$FE, snp_sets$ASSET1)
+)
+
+novel_16 <- csmgmm_t2 %>%
+  filter(rsid %in% group) %>%
+  select(
+    rsid,
+    Z_Breast,
+    Z_Lung,
+    Z_Ovarian,
+    Z_Prostate,
+    lfdrResults
+  ) %>%
+  distinct(rsid, .keep_all = TRUE) %>%
+  arrange(lfdrResults)
+
+fwrite(
+  novel_16,
+  file.path(output_dir, "16_Novel_SNPs.csv")
+)
