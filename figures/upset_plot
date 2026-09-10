@@ -24,6 +24,12 @@ snp_sets <- list(
 
 upset_data <- fromList(snp_sets)
 
+pdf(
+  file.path(output_dir, "upset_plot.pdf"),
+  width = 10,
+  height = 7
+)
+
 upset(
   upset_data,
   sets = names(snp_sets),
@@ -32,3 +38,5 @@ upset(
   nintersects = 30,
   keep.order = TRUE
 )
+
+dev.off()
