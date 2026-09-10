@@ -1,0 +1,111 @@
+library(data.table)
+library(here)
+library(ggplot2)
+library(dplyr)
+
+data_dir <- here("results")
+output_dir <- here("figures")
+
+fe_meta <- fread(file.path(data_dir, "fe_meta_sig.csv"))
+re_meta <- fread(file.path(data_dir, "re_meta_sig.csv"))
+asset1 <- fread(file.path(data_dir, "asset1_sig.csv"))
+asset2 <- fread(file.path(data_dir, "asset2_sig.csv"))
+csmgmm_t2 <- fread(file.path(data_dir, "csmgmm_sig.csv"))
+
+
+snp_sets <- list(
+  CSMGMM = unique(csmgmm_t2$rsid),
+  FE     = unique(fe_meta$rsid),
+  RE     = unique(re_meta$rsid),
+  ASSET1 = unique(asset1$rsid),
+  ASSET2 = unique(asset2$rsid)
+)
+
+all_shared <- Reduce(
+  intersect,
+  snp_sets
+)
+
+shared_csmgmm <- csmgmm_t2[rsid %in% all_shared]
+top10 <- shared_csmgmm[order(lfdrResults)][1:10]
+
+
+fe_meta[, rank_FE := .I]
+re_meta[, rank_RE := .I]
+asset1[, rank_ASSET1 := .I]
+asset2[, rank_ASSET2 := .I]
+csmgmm_t2[, rank_CSMGMM := .I]
+
+top10_snps <- top10$rsid
+
+plot_data <- rbind(
+  data.table(
+    rsid = top10_snps,
+    Method = "CSMGMM",
+    Rank = csmgmm_t2[match(top10_snps, rsid), rank_CSMGMM]
+  ),
+  data.table(
+    rsid = top10_snps,
+    Method = "FE",
+    Rank = fe_meta[match(top10_snps, rsid), rank_FE]
+  ),
+  data.table(
+    rsid = top10_snps,
+    Method = "RE",
+    Rank = re_meta[match(top10_snps, rsid), rank_RE]
+  ),
+  data.table(
+    rsid = top10_snps,
+    Method = "ASSET1",
+    Rank = asset1[match(top10_snps, rsid), rank_ASSET1]
+  ),
+  data.table(
+    rsid = top10_snps,
+    Method = "ASSET2",
+    Rank = asset2[match(top10_snps, rsid), rank_ASSET2]
+  )
+)
+
+plot_data[Method == "CSMGMM",
+          RelativeRank := 100 * Rank / nrow(csmgmm_t2)]
+
+plot_data[Method == "FE",
+          RelativeRank := 100 * Rank / nrow(fe_meta)]
+
+plot_data[Method == "RE",
+          RelativeRank := 100 * Rank / nrow(re_meta)]
+
+plot_data[Method == "ASSET1",
+          RelativeRank := 100 * Rank / nrow(asset1)]
+
+plot_data[Method == "ASSET2",
+          RelativeRank := 100 * Rank / nrow(asset2)]
+
+ggplot(plot_data,
+       aes(x = RelativeRank, y = rsid, group = rsid)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(aes(shape = Method), size = 3.5) +
+  scale_x_continuous(
+    breaks = c(0, 5, 10, 15, 20),
+    limits = c(0, 20)
+  ) +
+  labs(
+    x = "Relative ranking among significant SNPs (%)",
+    y = NULL,
+    shape = "Method"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 10),
+    axis.title.x = element_text(size = 11),
+    legend.position = "bottom",
+    plot.margin = margin(10, 15, 10, 15)
+  )
+
+
+ggsave(file.path(output_dir, "top10_rank_plot.pdf"), 
+       width = 14, height = 7 ) 
+
+# Save the data used to generate the plot 
+fwrite( plot_data, file.path(output_dir, "top10_rank_plot_data.csv") )
