@@ -1,0 +1,100 @@
+library(dplyr)
+library(data.table)
+library(tidyr)
+library(here)
+
+data_dir <- here("results")
+output_dir <- here("tables")
+
+fe_meta <- fread(file.path(data_dir, "Pleiotropy_K4_fe_all_zp.csv"))
+re_meta <- fread(file.path(data_dir, "Pleiotropy_K4_re_all_zp.csv"))
+asset1 <- fread(file.path(data_dir, "asset1_sig_zp.csv"))
+asset2 <- fread(file.path(data_dir, "asset2_sig_zp.csv"))
+csmgmm_t2 <- fread(file.path(data_dir, "csmgmm_sig.csv"))
+
+
+z_cols <- c("Z_Breast", "Z_Lung", "Z_Ovarian", "Z_Prostate")
+
+csmgmm_effect_size <- csmgmm_t2 %>%
+  mutate(
+    max_abs_Z = apply(abs(across(all_of(z_cols))), 1, max),
+    min_abs_Z = apply(abs(across(all_of(z_cols))), 1, min),
+    mean_abs_Z = apply(abs(across(all_of(z_cols))), 1, mean),
+    range_Z = apply(across(all_of(z_cols)), 1, function(x) diff(range(x))),
+    sd_Z = apply(across(all_of(z_cols)), 1, sd)
+  )
+
+fe_effect_size <- fe_meta %>%
+  mutate(
+    max_abs_Z = apply(abs(across(all_of(z_cols))), 1, max),
+    min_abs_Z = apply(abs(across(all_of(z_cols))), 1, min),
+    mean_abs_Z = apply(abs(across(all_of(z_cols))), 1, mean),
+    range_Z = apply(across(all_of(z_cols)), 1, function(x) diff(range(x))),
+    sd_Z = apply(across(all_of(z_cols)), 1, sd)
+  )
+
+
+re_effect_size <- re_meta %>%
+  mutate(
+    max_abs_Z = apply(abs(across(all_of(z_cols))), 1, max),
+    min_abs_Z = apply(abs(across(all_of(z_cols))), 1, min),
+    mean_abs_Z = apply(abs(across(all_of(z_cols))), 1, mean),
+    range_Z = apply(across(all_of(z_cols)), 1, function(x) diff(range(x))),
+    sd_Z = apply(across(all_of(z_cols)), 1, sd)
+  )
+
+asset1_effect_size <- asset1 %>%
+  mutate(
+    max_abs_Z = apply(abs(across(all_of(z_cols))), 1, max),
+    min_abs_Z = apply(abs(across(all_of(z_cols))), 1, min),
+    mean_abs_Z = apply(abs(across(all_of(z_cols))), 1, mean),
+    range_Z = apply(across(all_of(z_cols)), 1, function(x) diff(range(x))),
+    sd_Z = apply(across(all_of(z_cols)), 1, sd)
+  )
+
+
+asset2_effect_size <- asset2 %>%
+  mutate(
+    max_abs_Z = apply(abs(across(all_of(z_cols))), 1, max),
+    min_abs_Z = apply(abs(across(all_of(z_cols))), 1, min),
+    mean_abs_Z = apply(abs(across(all_of(z_cols))), 1, mean),
+    range_Z = apply(across(all_of(z_cols)), 1, function(x) diff(range(x))),
+    sd_Z = apply(across(all_of(z_cols)), 1, sd)
+  )
+
+
+
+effect_size_table <- data.frame(
+  Method = c("FE", "RE", "csmGmm", "1-sided ASSET", "2-sided ASSET"),
+  
+  `Median mean |Z|` = c(
+    median(fe_effect_size$mean_abs_Z, na.rm = TRUE),
+    median(re_effect_size$mean_abs_Z, na.rm = TRUE),
+    median(csmgmm_effect_size$mean_abs_Z, na.rm = TRUE),
+    median(asset1_effect_size$mean_abs_Z, na.rm = TRUE),
+    median(asset2_effect_size$mean_abs_Z, na.rm = TRUE)
+  ),
+  
+  `Median range(Z)` = c(
+    median(fe_effect_size$range_Z, na.rm = TRUE),
+    median(re_effect_size$range_Z, na.rm = TRUE),
+    median(csmgmm_effect_size$range_Z, na.rm = TRUE),
+    median(asset1_effect_size$range_Z, na.rm = TRUE),
+    median(asset2_effect_size$range_Z, na.rm = TRUE)
+  ),
+  
+  `Median SD(Z)` = c(
+    median(fe_effect_size$sd_Z, na.rm = TRUE),
+    median(re_effect_size$sd_Z, na.rm = TRUE),
+    median(csmgmm_effect_size$sd_Z, na.rm = TRUE),
+    median(asset1_effect_size$sd_Z, na.rm = TRUE),
+    median(asset2_effect_size$sd_Z, na.rm = TRUE)
+  )
+)
+
+# Round to 2 decimal places
+effect_size_table[-1] <- round(effect_size_table[-1], 2)
+effect_size_table
+
+# Output
+fwrite(effect_size_table, file.path(output_dir, "effect_size_table.csv"))
